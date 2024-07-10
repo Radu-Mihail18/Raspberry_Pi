@@ -1,0 +1,59 @@
+import RPi.GPIO as GPIO
+import time
+
+# Configurare GPIO
+GPIO.setmode(GPIO.BCM)  # Utilizeaza numerotarea GPIO BCM
+
+# Define?te pinii
+BUTTON_LEFT = 17
+BUTTON_RIGHT = 27
+led_r = 22
+led_g = 23
+led_b = 24
+
+GPIO.setup(BUTTON_LEFT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(BUTTON_RIGHT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(led_r, GPIO.OUT)
+GPIO.setup(led_g, GPIO.OUT)
+GPIO.setup(led_b, GPIO.OUT)
+
+GPIO.output(led_r, GPIO.LOW)
+GPIO.output(led_g, GPIO.LOW)
+GPIO.output(led_b, GPIO.LOW)
+
+current_led = led_r
+try:
+    while True:
+        if GPIO.input(BUTTON_LEFT) == GPIO.LOW:
+            GPIO.output(current_led, GPIO.LOW)
+
+            if current_led == led_r:
+                current_led = led_b
+            elif current_led == led_g:
+                current_led = led_r
+            elif current_led == led_b:
+                current_led = led_g
+
+            GPIO.output(current_led, GPIO.HIGH)
+            print(f"LED-ul {current_led} aprins spre stanga")
+            time.sleep(0.3)
+
+        if GPIO.input(BUTTON_RIGHT) == GPIO.LOW:
+            GPIO.output(current_led, GPIO.LOW)
+
+            if current_led == led_r:
+                current_led = led_g
+            elif current_led == led_g:
+                current_led = led_b
+            elif current_led == led_b:
+                current_led = led_r
+
+            GPIO.output(current_led, GPIO.HIGH)
+            print(f"LED-ul {current_led} aprins spre dreapta")
+            time.sleep(0.3)
+
+except KeyboardInterrupt:
+    pass
+
+finally:
+    GPIO.cleanup()
