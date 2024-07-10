@@ -1,0 +1,49 @@
+import RPi.GPIO as GPIO
+import time
+from RPLCD.i2c import CharLCD
+
+i2c_addr = 0x27
+
+lcd = CharLCD('PCF8574', i2c_addr, cols=16, rows=2)
+
+GPIO.setmode(GPIO.BCM)
+
+button_up =  17
+button_down = 27
+led = 22
+
+GPIO.setup(button_up, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(button_down, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(led, GPIO.OUT)
+
+pwm = GPIO.PWM(led, 30) #setez la frecv de 1000 Hz
+pwm.start(0) # porneste pwm cu o intensitatea de la valoarea 0%
+
+intensitate = 0
+
+try:
+        while True:
+             if GPIO.input(button_up) == GPIO.LOW:
+                          if intensitate < 100:
+                                  intensitate += 20
+                                  pwm.ChangeDutyCycle(intensitate)
+                                  print(f"Intensitate LED crescuta: {intensitate}%")
+                                  lcd.clear()
+                                  lcd.write_string(f"Intensitate: {intensitate}%")
+                                  time.sleep(0.1)
+                                              
+            if GPIO.input(button_down) == GPIO.LOW:
+                          if intensitate > 0:
+                                  intensitate -= 20
+                                  pwm.ChangeDutyCycle(intensitate)
+                                  print(f"Intensitate LED crescuta: {intensitate}%")
+                                  lcd.clear()
+                                  lcd.write_string(f"Intensitate: {intensitate}%")
+                                  time.sleep(0.1)
+
+except KeyboardInterrupt:
+        pass
+
+finally:
+        pwm.stop()
+        GPIO.cleanup() # reseteaza GPIO
