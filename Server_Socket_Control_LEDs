@@ -1,10 +1,12 @@
 import socket
 import RPi.GPIO as GPIO
+from  RPLCD.i2c import CharLCD
 
 LED_R = 17  # Pinul GPIO pentru LED
 LED_B = 27
 LED_G = 22
 
+lcd = CharLCD('PCF8574', 0x27)
 
 def setup():
     GPIO.setmode(GPIO.BCM)
@@ -36,30 +38,40 @@ def start_Server_LED():
                         GPIO.output(LED_G, GPIO.LOW)
                         GPIO.output(LED_B, GPIO.LOW)
                         print('LED rosu aprins')
+                        lcd.clear()
+                        lcd.write_string("LED rosu")
                         client_socket.sendall('LED rosu aprins'.encode('utf-8'))
                     elif message.lower() == 'aprinde led albastru':
                         GPIO.output(LED_B, GPIO.HIGH)
                         GPIO.output(LED_R, GPIO.LOW)
                         GPIO.output(LED_G, GPIO.LOW)
                         print('LED albastru aprins')
+                        lcd.clear()
+                        lcd.write_string("LED albastru")
                         client_socket.sendall('LED albastru  aprins'.encode('ut>
                     elif message.lower() == 'aprinde led verde':
                         GPIO.output(LED_G, GPIO.HIGH)
                         GPIO.output(LED_R, GPIO.LOW)
                         GPIO.output(LED_B, GPIO.LOW)
                         print('LED verde aprins')
+                        lcd.clear()
+                        lcd.write_string("LED verde")
                         client_socket.sendall('LED verde aprins'.encode('utf-8'>
                     elif message.lower() == 'aprinde tot':
                         GPIO.output(LED_R, GPIO.HIGH)
                         GPIO.output(LED_G, GPIO.HIGH)
                         GPIO.output(LED_B, GPIO.HIGH)
                         print('Toate LED-urile sunt aprinse')
+                        lcd.clear()
+                        lcd.write_string("aprinse toate")
                         client_socket.sendall('Toate LED-urile sunt aprinse'.en>
                     elif message.lower() == 'stinge led':
                         GPIO.output(LED_R, GPIO.LOW)
                         GPIO.output(LED_G, GPIO.LOW)
                         GPIO.output(LED_B, GPIO.LOW)
                         print('LED stins')
+                        lcd.clear()
+                        lcd.write_string("stinge tot")
                         client_socket.sendall('LED stins'.encode('utf-8'))
                     else:
                         client_socket.sendall('Comanda necunoscuta'.encode('utf>
