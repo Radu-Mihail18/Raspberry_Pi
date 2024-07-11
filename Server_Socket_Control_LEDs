@@ -1,0 +1,77 @@
+import socket
+import RPi.GPIO as GPIO
+
+LED_R = 17  # Pinul GPIO pentru LED
+LED_B = 27
+LED_G = 22
+
+
+def setup():
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(LED_R, GPIO.OUT)
+    GPIO.setup(LED_B, GPIO.OUT)
+    GPIO.setup(LED_G, GPIO.OUT)
+    GPIO.output(LED_R, GPIO.LOW)
+    GPIO.output(LED_B, GPIO.LOW)
+    GPIO.output(LED_G, GPIO.LOW)
+def start_Server_LED():
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind(('0.0.0.0', 65432))  # Asculta pe toate interfetele
+    server_socket.listen(1)
+    print('Serverul este in asteptarea conexiunilor...')
+
+    try:
+        while True:
+            client_socket, client_address = server_socket.accept()
+            print(f'Conexiune de la {client_address}')
+            try:
+                while True:
+                    message = client_socket.recv(1024).decode('utf-8')
+                    if not message:
+                        break
+                    print(f'Mesaj primit: {message}')
+
+                    if message.lower() == 'aprinde led rosu':
+                        GPIO.output(LED_R, GPIO.HIGH)
+                        GPIO.output(LED_G, GPIO.LOW)
+                        GPIO.output(LED_B, GPIO.LOW)
+                        print('LED rosu aprins')
+                        client_socket.sendall('LED rosu aprins'.encode('utf-8'))
+                    elif message.lower() == 'aprinde led albastru':
+                        GPIO.output(LED_B, GPIO.HIGH)
+                        GPIO.output(LED_R, GPIO.LOW)
+                        GPIO.output(LED_G, GPIO.LOW)
+                        print('LED albastru aprins')
+                        client_socket.sendall('LED albastru  aprins'.encode('ut>
+                    elif message.lower() == 'aprinde led verde':
+                        GPIO.output(LED_G, GPIO.HIGH)
+                        GPIO.output(LED_R, GPIO.LOW)
+                        GPIO.output(LED_B, GPIO.LOW)
+                        print('LED verde aprins')
+                        client_socket.sendall('LED verde aprins'.encode('utf-8'>
+                    elif message.lower() == 'aprinde tot':
+                        GPIO.output(LED_R, GPIO.HIGH)
+                        GPIO.output(LED_G, GPIO.HIGH)
+                        GPIO.output(LED_B, GPIO.HIGH)
+                        print('Toate LED-urile sunt aprinse')
+                        client_socket.sendall('Toate LED-urile sunt aprinse'.en>
+                    elif message.lower() == 'stinge led':
+                        GPIO.output(LED_R, GPIO.LOW)
+                        GPIO.output(LED_G, GPIO.LOW)
+                        GPIO.output(LED_B, GPIO.LOW)
+                        print('LED stins')
+                        client_socket.sendall('LED stins'.encode('utf-8'))
+                    else:
+                        client_socket.sendall('Comanda necunoscuta'.encode('utf>
+            except Exception as e:
+                print(f'Eroare la client: {e}')
+            finally:
+                client_socket.close()
+    except KeyboardInterrupt:
+        print("Serverul a fost oprit manual")
+    finally:
+        server_socket.close()
+        GPIO.cleanup()
+if __name__ == '__main__':
+    setup()
+    start_Server_LED()
