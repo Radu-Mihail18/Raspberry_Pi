@@ -1,0 +1,14 @@
+import socket
+
+def start_client():
+    # Create a socket TCP/IP
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.connect(('192.168.1.x', 65432))  # Change with your Raspberry Pi ip address
+
+    client_socket.sendall('aprinde led rosu'.encode('utf-8')) # Here you can type the message/command you want
+    response = client_socket.recv(1024).decode('utf-8')
+    print(f'Respuns de la server: {response}')
+    client_socket.close()
+
+if __name__ == '__main__':
+    start_client()
