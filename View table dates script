@@ -1,0 +1,18 @@
+import sqlite3
+
+# Conectarea la baza de date
+conn = sqlite3.connect('starea_led.db')
+
+# Crearea unui cursor
+cursor = conn.cursor()
+
+# Selectarea tuturor datelor din tabela led_states
+cursor.execute('SELECT * FROM starea_led')
+
+# Afisarea rezultatelor
+rows = cursor.fetchall()
+for row in rows:
+    print(row)
+
+# Inchiderea conexiunii
+conn.close()
