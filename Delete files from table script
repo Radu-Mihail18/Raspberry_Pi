@@ -1,0 +1,13 @@
+import sqlite3
+
+def delete_all_from_table(table_name):
+    conn = sqlite3.connect('starea_led.db')
+    cursor = conn.cursor()
+    cursor.execute(f"DELETE FROM {table_name}")
+    cursor.execute("DELETE FROM sqlite_sequence WHERE name='starea_led'")
+    conn.commit()
+    conn.close()
+    print(f"All data from table {table_name} has been deleted.")
+
+# ?tergerea tuturor datelor din tabela 'led_states'
+delete_all_from_table('starea_led')
