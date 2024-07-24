@@ -1,0 +1,21 @@
+import sqlite3
+
+conn = sqlite3.connect('starea_led.db')
+
+cursor = conn.cursor()
+
+cursor.execute('''
+        CREATE TABLE IF NOT EXISTS starea_led (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                led_name TEXT NOT NULL,
+                state INTEGER NOT NULL,
+                timestamp DATATIME DEFAULT CURRENT_TIMESTAMP
+        )
+''')
+
+
+#Confirmarea modificarilor
+conn.commit()
+conn.close()
+
+print("Database initializat si tabel creat cu succes."
