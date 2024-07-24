@@ -1,0 +1,71 @@
+import RPi.GPIO as GPIO
+import sqlite3
+import time
+
+# Configurarea pinilor GPIO pentru LED-uri
+LED_RED_PIN = 17
+LED_BLUE_PIN = 27
+LED_GREEN_PIN = 22
+
+# Configurarea modului GPIO si a pinilor
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(LED_RED_PIN, GPIO.OUT)
+GPIO.setup(LED_BLUE_PIN, GPIO.OUT)
+GPIO.setup(LED_GREEN_PIN, GPIO.OUT)
+
+# Func?ie pentru a stoca starea LED-ului în baza de date
+def log_led_state(led_name, state):
+    conn = sqlite3.connect('starea_led.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO starea_led (led_name, state)
+        VALUES (?, ?)
+    ''', (led_name, state))
+    conn.commit()
+    conn.close()
+
+# Functie pentru a aprinde un LED
+def turn_on_led(pin, led_name):
+    GPIO.output(pin, GPIO.HIGH)
+    print(f"{led_name} turned ON")
+
+# Functie pentru a stinge un LED
+def turn_off_led(pin, led_name):
+    GPIO.output(pin, GPIO.LOW)
+    print(f"{led_name} turned OFF")
+
+# Monitorizarea LED-urilor si stocarea starii acestora
+try:
+    while True:
+        # Aprindem si stingem LED-ul rosu
+        turn_on_led(LED_RED_PIN, 'LED_RED')
+        time.sleep(1)
+        log_led_state('LED_RED', 1)
+
+        turn_off_led(LED_RED_PIN, 'LED_RED')
+        time.sleep(1)
+        log_led_state('LED_RED', 0)
+
+        # Aprindem si stingem LED-ul albastru
+        turn_on_led(LED_BLUE_PIN, 'LED_BLUE')
+        time.sleep(1)
+        log_led_state('LED_BLUE', 1)
+
+        turn_off_led(LED_BLUE_PIN, 'LED_BLUE')
+        time.sleep(1)
+        log_led_state('LED_BLUE', 0)
+
+        # Aprindem si stingem LED-ul verde
+        turn_on_led(LED_GREEN_PIN, 'LED_GREEN')
+        time.sleep(1)
+        log_led_state('LED_GREEN', 1)
+
+        turn_off_led(LED_GREEN_PIN, 'LED_GREEN')
+        time.sleep(1)
+        log_led_state('LED_GREEN', 0)
+
+        # Delay intre cicluri
+        time.sleep(5)
+except KeyboardInterrupt:
+    GPIO.cleanup()
+    print("Program terminated and GPIO cleaned up.")
