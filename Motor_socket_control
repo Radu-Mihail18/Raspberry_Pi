@@ -1,0 +1,96 @@
+import socket
+import RPi.GPIO as GPIO
+import time
+import threading
+
+# Configurarea pinilor GPIO
+DIR_PIN = 17
+PUL_PIN = 27
+
+# Configurare GPIO
+def setup():
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(DIR_PIN, GPIO.OUT)
+    GPIO.setup(PUL_PIN, GPIO.OUT)
+    GPIO.output(DIR_PIN, GPIO.HIGH)  # Directia implicita
+    GPIO.output(PUL_PIN, GPIO.LOW)
+
+def step(delay=0.001):
+    GPIO.output(PUL_PIN, GPIO.HIGH)
+    time.sleep(delay)
+    GPIO.output(PUL_PIN, GPIO.LOW)
+    time.sleep(delay)
+
+# Variabile pentru starea motorului si directie
+motor_running = False
+motor_direction = GPIO.HIGH
+
+def toggle_motor_state():
+    global motor_running
+    motor_running = not motor_running
+    print(f"Stare motor: {'Pornit' if motor_running else 'Oprit'}")
+    return "Motor pornit" if motor_running else "Motor oprit"
+
+def toggle_motor_direction():
+    global motor_direction
+    motor_direction = GPIO.LOW if motor_direction == GPIO.HIGH else GPIO.HIGH
+    GPIO.output(DIR_PIN, motor_direction)
+    print(f"Directie motor: {'Inainte' if motor_direction == GPIO.HIGH else 'In>
+    return "Directia schimbata"
+def motor_control_loop():
+    while True:
+        if motor_running:
+            print("Motor in miscare...")
+            # Trimitere impulsuri pentru a misca motorul
+            step()
+        else:
+            time.sleep(0.01)  # Pauza pentru a reduce utilizarea CPU-ului
+
+def start_Server_Motor():
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind(('0.0.0.0', 65432))
+    server_socket.listen(1)
+    print('Serverul este in asteptarea conexiunilor...')
+
+    # Creeaza un thread pentru controlul motorului
+    motor_thread = threading.Thread(target=motor_control_loop, daemon=True)
+    motor_thread.start()
+try:
+        while True:
+            client_socket, client_address = server_socket.accept()
+            print(f'Conexiune de la {client_address}')
+            try:
+                while True:
+                    message = client_socket.recv(1024).decode('utf-8')
+                    if not message:
+                        break
+                    print(f'Mesaj primit: {message}')
+
+                    response = ''
+                    if message.lower() == 'porneste motor':
+                        response = toggle_motor_state()
+                    elif message.lower() == 'schimba directia':
+                        response = toggle_motor_direction()
+                    elif message.lower() == 'opreste motor':
+                        if motor_running:
+                            response = toggle_motor_state()
+                        else:
+                            response = "Motorul este deja oprit"
+                    else:
+                        response = 'Comanda necunoscuta'
+
+                    client_socket.sendall(response.encode('utf-8'))
+
+            except Exception as e:
+                print(f'Eroare la client: {e}')
+            finally:
+                client_socket.close()
+    except KeyboardInterrupt:
+        print("Serverul a fost oprit manual")
+    finally:
+        server_socket.close()
+        GPIO.cleanup()
+
+if __name__ == '__main__':
+    setup()
+    start_Server_Motor()
