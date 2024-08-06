@@ -1,0 +1,51 @@
+import time
+import RPi.GPIO as GPIO
+
+# Configurarea pinilor pentru driver-ul de motor pas cu pas
+DIR_PIN = 17
+STEP_PIN = 27
+BUTTON_PIN = 22
+
+# Configurarea GPIO
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(DIR_PIN, GPIO.OUT)
+GPIO.setup(STEP_PIN, GPIO.OUT)
+GPIO.setup(BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Buton cu rezistor >
+
+# Configura?i numarul de pa?i pentru microstepping
+full_steps_per_revolution = 200  # Numarul de pa?i pe rota?ie completa al motor>
+microsteps_per_step = 800 / full_steps_per_revolution  # Micro-pa?i pe pas
+
+# Calculul pa?ilor pentru 90 de grade
+degrees_per_step = 360 / full_steps_per_revolution  # Grade per pas
+steps_for_90_degrees = int((90 / degrees_per_step) * microsteps_per_step)  # Pa>
+
+# Variabila de stare
+motor_position = 0  # 0 pentru pozi?ia ini?iala, 1 pentru 90 de grade
+
+# Func?ie pentru a mi?ca motorul
+def move_motor(steps, direction=GPIO.HIGH):
+    GPIO.output(DIR_PIN, direction)
+    for _ in range(steps):
+        GPIO.output(STEP_PIN, GPIO.HIGH)
+        time.sleep(0.001)  # Ajusta?i timpul în func?ie de necesitate
+        GPIO.output(STEP_PIN, GPIO.LOW)
+        time.sleep(0.001)
+
+# Bucla principala
+try:
+    while True:
+        if not GPIO.input(BUTTON_PIN):  # Verifica daca butonul este apasat
+            if motor_position == 0:
+                print("Buton apasat. Mi?care motor la 90 de grade.")
+                move_motor(steps_for_90_degrees, direction=GPIO.HIGH)  # Mi?ca >
+                motor_position = 1  # Actualizeaza starea motorului
+            elif motor_position == 1:
+                print("Buton apasat din nou. Întoarcere motor la pozi?ia ini?ia>
+                move_motor(steps_for_90_degrees, direction=GPIO.LOW)  # Mi?ca m>
+                motor_position = 0  # Actualizeaza starea motorului
+            time.sleep(1)  # A?teapta un pic pentru a evita multiplele declan?a>
+        time.sleep(0.1)
+
+except KeyboardInterrupt:
+    GPIO.cleanup()  # Cura?a configurarile GPIO atunci când se apasa Ctrl+C
