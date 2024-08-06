@@ -1,0 +1,71 @@
+import time
+from smbus2 import SMBus
+import RPi.GPIO as GPIO
+
+# Adresa I2C a MCP3426 (inlocuieste cu adresa detectata, de exemplu 0x68)
+MCP3426_I2C_ADDRESS = 0x6c
+
+# Pini de control pentru driver-ul motorului pas cu pas
+DIR_PIN = 17
+STEP_PIN = 27
+
+# Configurarea GPIO
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(DIR_PIN, GPIO.OUT)
+GPIO.setup(STEP_PIN, GPIO.OUT)
+
+# Functie pentru a crea configuratia registrului
+def create_config(channel=0, mode=1, resolution=0, gain=0):
+    config = (mode << 4) | (channel << 5) | (resolution << 2) | gain
+    return config
+# Initializeaza I2C
+bus = SMBus(1)
+
+def read_adc(config):
+    # Trimite configuratia catre MCP3426
+    bus.write_byte(MCP3426_I2C_ADDRESS, config)
+    time.sleep(0.01)
+
+    # Citeste 2 bytes de la MCP3426 pentru rezolutie de 12 biti
+    data = bus.read_i2c_block_data(MCP3426_I2C_ADDRESS, 0, 2)
+
+
+    # Conversia datelor
+    raw_adc = (data[0] & 0x0F) * 256 + data[1]
+    #raw_adc = raw_adc >> 4  # Deoarece este un ADC pe 12 biti
+
+    time.sleep(0.1)
+
+    return raw_adc
+# Configuratii pentru cele doua canale ale joystick-ului
+config_x = create_config(channel=0, mode=1, resolution=0, gain=0)
+config_y = create_config(channel=1, mode=1, resolution=0, gain=0)
+
+# Functie pentru a controla motorul pas cu pas
+def step_motor(direction, steps):
+    GPIO.output(DIR_PIN, direction)
+    for _ in range(100):
+        GPIO.output(STEP_PIN, GPIO.HIGH)
+        time.sleep(0.001)  # Timp de intarziere mai mic
+        GPIO.output(STEP_PIN, GPIO.LOW)
+        time.sleep(0.001)  # Timp de intarziere mai mic
+
+try:
+    while True:
+        # Citeste valorile pentru axa X si axa Y
+        x_value = read_adc(config_x)
+        y_value = read_adc(config_y)
+
+        # Afiseaza valorile citite pentru debugging
+        print("X Value: {}, Y Value: {}".format(x_value, y_value))
+
+        # Determina directia motorului bazata pe valorile citite
+        if x_value > 812:  # Axa X deplasata la dreapta
+            step_motor(GPIO.HIGH, 100)
+        elif x_value < 665:  # Axa X deplasata la stanga
+            step_motor(GPIO.LOW, 100)
+        else:
+            GPIO.output(STEP_PIN, GPIO.LOW) #opreste motorul in zona neutra
+
+except KeyboardInterrupt:
+    GPIO.cleanup()
