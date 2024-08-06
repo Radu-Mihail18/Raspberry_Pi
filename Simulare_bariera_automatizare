@@ -1,0 +1,51 @@
+import time
+import RPi.GPIO as GPIO
+from gpiozero import DistanceSensor
+
+DIR = 17
+PUL = 27
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(DIR, GPIO.OUT)
+GPIO.setup(PUL, GPIO.OUT)
+
+full_steps_per_rev = 200
+microsteps_per_rev = 800 / full_steps_per_rev
+
+degrees_per_step = 360 / full_steps_per_rev
+steps_for_90_degrees = int((90 / degrees_per_step) * microsteps_per_rev)
+
+motor_position = 0
+
+def move_motor(steps, direction = GPIO.HIGH):
+     GPIO.output(DIR, direction)
+     for _ in range(steps):
+         GPIO.output(PUL, GPIO.HIGH)
+         time.sleep(0.001)
+         GPIO.output(PUL, GPIO.LOW)
+         time.sleep(0.001)
+
+sensor = DistanceSensor(echo=24, trigger=23)
+
+try:
+    while True:
+        dist = sensor.distance * 100 #convetim in cm
+        print(f"Distanta: {dist:.1f} cm")
+
+        if dist < 10 and motor_position == 0:
+            print("Obstacol detectat, ridicam bariera")
+            move_motor(steps_for_90_degrees, direction = GPIO.LOW)
+            motor_position = 1
+            time.sleep(3)
+
+        elif dist >=10 and motor_position == 1:
+            print("Niciun obstacol, coboram bariera")
+            move_motor(steps_for_90_degrees, direction = GPIO.HIGH)
+            motor_position = 0
+            time.sleep(3)
+
+        time.sleep(0.1)
+
+except KeyboardInterrupt:
+    print("Simulare oprita de catre admin")
+    GPIO.cleanup()
