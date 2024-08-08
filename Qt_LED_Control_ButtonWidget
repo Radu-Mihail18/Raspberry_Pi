@@ -1,0 +1,48 @@
+import sys
+from PySide6.QtWidgets import QApplication, QPushButton, QWidget, QVBoxLayout
+from PySide6.QtCore import Slot
+import RPi.GPIO as GPIO
+
+GPIO.setmode(GPIO.BCM)
+
+led = 22
+
+GPIO.setup(led, GPIO.OUT)
+
+@Slot() #decorator care identidica ca o functie este de tip slot
+def open_led():
+        GPIO.output(led, GPIO.HIGH)
+@Slot()
+def close_led():
+        GPIO.output(led, GPIO.LOW)
+
+# Create the Qt Application
+app = QApplication(sys.argv)
+
+# Crearea ferestrei principale
+window = QWidget()
+window.setWindowTitle('LED Control')
+
+# Create the push buttons
+button1= QPushButton("ON")
+button2= QPushButton("OFF")
+
+# Create layout
+layout = QVBoxLayout()
+
+# Connect the button to the function
+button1.clicked.connect(open_led)
+button2.clicked.connect(close_led)
+
+# Adding Buttons to Layout
+layout.addWidget(button1)
+layout.addWidget(button2)
+
+# Setting window's layout
+window.setLayout(layout)
+
+# Show the window
+window.show()
+
+# Rularea aplicatiei Qt
+sys.exit(app.exec())
