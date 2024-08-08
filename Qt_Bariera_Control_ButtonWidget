@@ -1,0 +1,76 @@
+import time
+import sys
+from PySide6.QtWidgets import QApplication, QPushButton, QWidget, QVBoxLayout
+from PySide6.QtCore import Slot
+import RPi.GPIO as GPIO
+
+GPIO.setmode(GPIO.BCM)
+
+DIR_PIN = 17
+STEP_PIN = 27
+
+GPIO.setup(DIR_PIN, GPIO.OUT)
+GPIO.setup(STEP_PIN, GPIO.OUT)
+
+# Configurati numarul de pasi pentru microstepping
+full_steps_per_revolution = 200  # Numarul de pasi pe rotatie completa al motorului
+microsteps_per_step = 800 / full_steps_per_revolution  # Micro-pasi pe pas
+
+# Calculul pasilor pentru 90 de grade
+degrees_per_step = 360 / full_steps_per_revolution  # Grade per pas
+steps_for_90_degrees = int((90 / degrees_per_step) * microsteps_per_step)  # Pa>
+
+# Variabila de stare
+motor_position = 0  # 0 pentru pozi?ia ini?iala, 1 pentru 90 de grade
+
+@Slot() #decorator care identidica ca o functie este de tip slot
+def move_motor(steps, direction=GPIO.HIGH):
+    GPIO.output(DIR_PIN, direction)
+    for _ in range(steps):
+        GPIO.output(STEP_PIN, GPIO.HIGH)
+        time.sleep(0.001) 
+        GPIO.output(STEP_PIN, GPIO.LOW)
+        time.sleep(0.001)
+
+def ridica_bariera():
+    global motor_position
+    if motor_position == 0:
+                move_motor(steps_for_90_degrees, direction=GPIO.HIGH) 
+                motor_position = 1 
+
+def coboara_bariera():
+    global motor_position
+    if motor_position == 1:
+                move_motor(steps_for_90_degrees, direction=GPIO.LOW) 
+                motor_position = 0  
+
+# Create the Qt Application
+app = QApplication(sys.argv)
+
+# Crearea ferestrei principale
+window = QWidget()
+window.setWindowTitle('Control_bariera')
+
+# Create the push buttons
+button1= QPushButton("Ridica")
+button2= QPushButton("Coboara")
+
+# Create layout
+layout = QVBoxLayout()
+
+# Connect the button to the function
+button1.clicked.connect(ridica_bariera)
+button2.clicked.connect(coboara_bariera)
+
+# Adding Buttons to Layout
+layout.addWidget(button1)
+layout.addWidget(button2)
+
+# Setting window's layout
+window.setLayout(layout)
+
+# Show the window
+window.show()
+
+# Rularea aplicatiei Qt
+sys.exit(app.exec())
