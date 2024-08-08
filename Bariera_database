@@ -1,0 +1,108 @@
+import time
+import sqlite3
+from datetime import datetime
+import RPi.GPIO as GPIO
+from gpiozero import DistanceSensor
+
+# Configurarea pinilor pentru driver-ul de motor pas cu pas
+DIR_PIN = 17
+STEP_PIN = 27
+
+# Configurarea GPIO
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(DIR_PIN, GPIO.OUT)
+GPIO.setup(STEP_PIN, GPIO.OUT)
+
+# Configurați numărul de pași pentru microstepping
+full_steps_per_revolution = 200  # Numărul de pași pe rotație completă al motorului
+microsteps_per_step = 800 / full_steps_per_revolution  # Micro-pași pe pas
+
+# Calculul pașilor pentru 90 de grade
+degrees_per_step = 360 / (full_steps_per_revolution * microsteps_per_step)
+steps_for_90_degrees = int(90 / degrees_per_step)  # Pași pentru 90 de grade
+
+# Variabilă de stare
+motor_position = 0  # 0 pentru poziția inițială, 1 pentru 90 de grade
+
+# Funcție pentru a mișca motorul
+def move_motor(steps, direction=GPIO.HIGH):
+    GPIO.output(DIR_PIN, direction)
+    for _ in range(steps):
+        GPIO.output(STEP_PIN, GPIO.HIGH)
+        time.sleep(0.001)  # Ajustați timpul în funcție de necesitate
+        GPIO.output(STEP_PIN, GPIO.LOW)
+        time.sleep(0.001)
+
+# Initializează senzorul de distanță
+sensor = DistanceSensor(echo=24, trigger=23)
+
+# Configurare baza de date
+conn = sqlite3.connect('detection_log.db')
+c = conn.cursor()
+
+# Crează tabela dacă nu există, sau o modifică pentru a include distanța
+c.execute('''
+CREATE TABLE IF NOT EXISTS detections (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    timestamp TEXT NOT NULL,
+    distance REAL NOT NULL
+)
+''')
+conn.commit()
+
+# Funcție pentru a înregistra momentul detecției și distanța în baza de date
+def log_detection(distance):
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    c.execute('INSERT INTO detections (timestamp, distance) VALUES (?, ?)', (timestamp, distance))
+    conn.commit()
+    print(f"Detecție înregistrată la {timestamp}, distanță: {distance:.1f} cm")
+
+# Funcție pentru a interoga baza de date și a afișa înregistrările
+def query_database():
+    c.execute('SELECT * FROM detections')
+    rows = c.fetchall()
+    print("Înregistrări în baza de date:")
+    for row in rows:
+        print(f"ID: {row[0]}, Timp: {row[1]}, Distanță: {row[2]:.1f} cm")
+
+# Funcție pentru a șterge toate datele din baza de date și a reseta id-urile
+def clear_database():
+    c.execute('DROP TABLE IF EXISTS detections')
+    c.execute('''
+    CREATE TABLE detections (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        timestamp TEXT NOT NULL,
+        distance REAL NOT NULL
+    )
+    ''')
+    conn.commit()
+    print("Toate datele au fost șterse și tabela a fost resetată.")
+
+try:
+    while True:
+        dist = sensor.distance * 100  # Convertim în cm
+        print(f"Distanța: {dist:.1f} cm")
+
+        if dist < 10 and motor_position == 0:  # Dacă distanța este mai mică de 10 cm și bariera este jos
+            print("Obstacol detectat, ridicăm bariera")
+            log_detection(dist)  # Înregistrează momentul detecției și distanța în baza de date
+            move_motor(steps_for_90_degrees, direction=GPIO.HIGH)  # Ridică bariera la 90 de grade
+            motor_position = 1  # Actualizează starea motorului
+            time.sleep(3)  # Așteaptă 3 secunde înainte de a verifica din nou
+
+        elif dist >= 10 and motor_position == 1:  # Dacă nu se detectează obstacol și bariera este sus
+            print("Niciun obstacol, coborâm bariera")
+            move_motor(steps_for_90_degrees, direction=GPIO.LOW)  # Coboară bariera la poziția inițială
+            motor_position = 0  # Actualizează starea motorului
+            time.sleep(3)  # Așteaptă 3 secunde înainte de a verifica din nou
+
+        time.sleep(0.1)  # Pauză de 100 ms între măsurători
+
+except KeyboardInterrupt:
+    print("Măsurătoare oprită de utilizator")
+    GPIO.cleanup()
+    query_database()  # Interoghează baza de date și afișează înregistrările
+    conn.close()  # Închide conexiunea cu baza de date
+
+# Exemplu de apelare a funcției clear_database()
+# clear_database()  # Decomentați această linie pentru a șterge toate datele
