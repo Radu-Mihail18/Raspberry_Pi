@@ -1,0 +1,204 @@
+# -*- coding: utf-8 -*-
+
+################################################################################
+## Form generated from reading UI file 'form.ui'
+##
+## Created by: Qt User Interface Compiler version 6.7.2
+##
+## WARNING! All changes made in this file will be lost when recompiling UI file!
+################################################################################
+
+from PySide6.QtCore import (QCoreApplication, QMetaObject, QRect, Qt)
+from PySide6.QtGui import (QFont)
+from PySide6.QtWidgets import (QApplication, QLabel, QPushButton, QWidget, QFrame)
+
+
+class Ui_Calculator(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+        self.expression = ""  # Variabilă pentru stocarea expresiei matematice
+        
+    def setupUi(self, Calculator):
+        if not Calculator.objectName():
+            Calculator.setObjectName(u"Calculator")
+        Calculator.resize(335, 563)
+        self.outputLabel = QLabel(Calculator)
+        self.outputLabel.setObjectName(u"outputLabel")
+        self.outputLabel.setGeometry(QRect(10, 10, 311, 81))
+        font = QFont()
+        font.setPointSize(36)
+        self.outputLabel.setFont(font)
+        self.outputLabel.setFrameShape(QFrame.Box)
+        self.outputLabel.setFrameShadow(QFrame.Raised)
+        self.outputLabel.setLineWidth(2)
+        self.outputLabel.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
+        self.outputLabel.setMargin(10)
+
+        # Configurare butoane
+        self.percentButton = QPushButton(Calculator)
+        self.percentButton.setObjectName(u"percentButton")
+        self.percentButton.setGeometry(QRect(10, 120, 65, 65))
+        self.percentButton.setText("%")
+        self.cButton = QPushButton(Calculator)
+        self.cButton.setObjectName(u"cButton")
+        self.cButton.setGeometry(QRect(90, 120, 65, 65))
+        self.cButton.setText("C")
+        self.arrowButton = QPushButton(Calculator)
+        self.arrowButton.setObjectName(u"arrowButton")
+        self.arrowButton.setGeometry(QRect(170, 120, 65, 65))
+        self.arrowButton.setText("<<")
+        self.devideButton = QPushButton(Calculator)
+        self.devideButton.setObjectName(u"devideButton")
+        self.devideButton.setGeometry(QRect(250, 120, 65, 65))
+        self.devideButton.setText("/")
+        self.multiplyButton = QPushButton(Calculator)
+        self.multiplyButton.setObjectName(u"multiplyButton")
+        self.multiplyButton.setGeometry(QRect(250, 210, 65, 65))
+        self.multiplyButton.setText("X")
+        self.sevenButton = QPushButton(Calculator)
+        self.sevenButton.setObjectName(u"sevenButton")
+        self.sevenButton.setGeometry(QRect(10, 210, 65, 65))
+        self.sevenButton.setText("7")
+        self.nineButton = QPushButton(Calculator)
+        self.nineButton.setObjectName(u"nineButton")
+        self.nineButton.setGeometry(QRect(170, 210, 65, 65))
+        self.nineButton.setText("9")
+        self.eightButton = QPushButton(Calculator)
+        self.eightButton.setObjectName(u"eightButton")
+        self.eightButton.setGeometry(QRect(90, 210, 65, 65))
+        self.eightButton.setText("8")
+        self.minusButton = QPushButton(Calculator)
+        self.minusButton.setObjectName(u"minusButton")
+        self.minusButton.setGeometry(QRect(250, 300, 65, 65))
+        self.minusButton.setText("-")
+        self.fourButton = QPushButton(Calculator)
+        self.fourButton.setObjectName(u"fourButton")
+        self.fourButton.setGeometry(QRect(10, 300, 65, 65))
+        self.fourButton.setText("4")
+        self.sixButton = QPushButton(Calculator)
+        self.sixButton.setObjectName(u"sixButton")
+        self.sixButton.setGeometry(QRect(170, 300, 65, 65))
+        self.sixButton.setText("6")
+        self.fiveButton = QPushButton(Calculator)
+        self.fiveButton.setObjectName(u"fiveButton")
+        self.fiveButton.setGeometry(QRect(90, 300, 65, 65))
+        self.fiveButton.setText("5")
+        self.plusButton = QPushButton(Calculator)
+        self.plusButton.setObjectName(u"plusButton")
+        self.plusButton.setGeometry(QRect(250, 390, 65, 65))
+        self.plusButton.setText("+")
+        self.oneButton = QPushButton(Calculator)
+        self.oneButton.setObjectName(u"oneButton")
+        self.oneButton.setGeometry(QRect(10, 390, 65, 65))
+        self.oneButton.setText("1")
+        self.threeButton = QPushButton(Calculator)
+        self.threeButton.setObjectName(u"threeButton")
+        self.threeButton.setGeometry(QRect(170, 390, 65, 65))
+        self.threeButton.setText("3")
+        self.twoButton = QPushButton(Calculator)
+        self.twoButton.setObjectName(u"twoButton")
+        self.twoButton.setGeometry(QRect(90, 390, 65, 65))
+        self.twoButton.setText("2")
+        self.equalButton = QPushButton(Calculator)
+        self.equalButton.setObjectName(u"equalButton")
+        self.equalButton.setGeometry(QRect(250, 480, 65, 65))
+        self.equalButton.setText("=")
+        self.plusminusButton = QPushButton(Calculator)
+        self.plusminusButton.setObjectName(u"plusminusButton")
+        self.plusminusButton.setGeometry(QRect(10, 480, 65, 65))
+        self.plusminusButton.setText("+/-")
+        self.pointButton = QPushButton(Calculator)
+        self.pointButton.setObjectName(u"pointButton")
+        self.pointButton.setGeometry(QRect(170, 480, 65, 65))
+        self.pointButton.setText(".")
+        self.zeroButton = QPushButton(Calculator)
+        self.zeroButton.setObjectName(u"zeroButton")
+        self.zeroButton.setGeometry(QRect(90, 480, 65, 65))
+        self.zeroButton.setText("0")
+
+        self.retranslateUi(Calculator)
+
+        QMetaObject.connectSlotsByName(Calculator)
+
+        # Conectează toate butoanele la funcția lor respectivă
+        self.connectButtons()
+
+    def connectButtons(self):
+        # Conectează fiecare buton la funcția sa printr-un lambda
+        self.zeroButton.clicked.connect(lambda: self.press_it("0"))
+        self.oneButton.clicked.connect(lambda: self.press_it("1"))
+        self.twoButton.clicked.connect(lambda: self.press_it("2"))
+        self.threeButton.clicked.connect(lambda: self.press_it("3"))
+        self.fourButton.clicked.connect(lambda: self.press_it("4"))
+        self.fiveButton.clicked.connect(lambda: self.press_it("5"))
+        self.sixButton.clicked.connect(lambda: self.press_it("6"))
+        self.sevenButton.clicked.connect(lambda: self.press_it("7"))
+        self.eightButton.clicked.connect(lambda: self.press_it("8"))
+        self.nineButton.clicked.connect(lambda: self.press_it("9"))
+        self.pointButton.clicked.connect(lambda: self.press_it("."))
+        self.plusButton.clicked.connect(lambda: self.press_it("+"))
+        self.minusButton.clicked.connect(lambda: self.press_it("-"))
+        self.multiplyButton.clicked.connect(lambda: self.press_it("*"))
+        self.devideButton.clicked.connect(lambda: self.press_it("/"))
+        self.percentButton.clicked.connect(lambda: self.press_it("%"))
+        self.cButton.clicked.connect(self.clear_it)
+        self.arrowButton.clicked.connect(self.backspace_it)
+        self.equalButton.clicked.connect(self.calculate_result)
+        self.plusminusButton.clicked.connect(self.plus_minus_it)
+
+    def press_it(self, pressed):
+        if self.expression == "Error":
+            self.expression = ""
+        if pressed == "%":
+            # Converteste la valoarea procentuala
+            if self.expression:
+                try:
+                    self.expression = str(float(self.expression) / 100)
+                except ValueError:
+                    self.expression = "Error"
+        else:
+            self.expression += pressed
+        self.update_output()
+
+    def clear_it(self):
+        self.expression = ""
+        self.update_output()
+
+    def backspace_it(self):
+        self.expression = self.expression[:-1]
+        self.update_output()
+
+    def plus_minus_it(self):
+        if self.expression:
+            try:
+                if self.expression.startswith("-"):
+                    self.expression = self.expression[1:]
+                else:
+                    self.expression = "-" + self.expression
+            except ValueError:
+                self.expression = "Error"
+        self.update_output()
+
+    def calculate_result(self):
+        try:
+            # Evaluare expresie
+            self.expression = str(eval(self.expression))
+        except (SyntaxError, ZeroDivisionError, ValueError):
+            self.expression = "Error"
+        self.update_output()
+
+    def update_output(self):
+        self.outputLabel.setText(self.expression if self.expression else "0")
+
+    def retranslateUi(self, Calculator):
+        Calculator.setWindowTitle(QCoreApplication.translate("Calculator", u"Widget", None))
+        self.outputLabel.setText(QCoreApplication.translate("Calculator", u"0", None))
+        # Restul traducerilor sunt făcute în timpul creării butoanelor, nu aici
+
+if __name__ == "__main__":
+    import sys
+    app = QApplication(sys.argv)
+    Calculator = Ui_Calculator()
+    Calculator.show()
+    sys.exit(app.exec())
