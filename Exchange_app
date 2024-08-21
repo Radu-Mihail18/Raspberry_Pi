@@ -1,0 +1,106 @@
+# -*- coding: utf-8 -*-
+
+################################################################################
+## Form generated from reading UI file 'form.ui'
+##
+## Created by: Qt User Interface Compiler version 6.7.2
+##
+## WARNING! All changes made in this file will be lost when recompiling UI file!
+################################################################################
+
+from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
+    QMetaObject, QObject, QPoint, QRect,
+    QSize, QTime, QUrl, Qt)
+from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
+    QFont, QFontDatabase, QGradient, QIcon,
+    QImage, QKeySequence, QLinearGradient, QPainter,
+    QPalette, QPixmap, QRadialGradient, QTransform)
+from PySide6.QtWidgets import (QApplication, QComboBox, QLabel, QLineEdit,
+    QPushButton, QSizePolicy, QTextEdit, QWidget)
+import sys
+import requests
+
+class Ui_Exchange(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setupUi()
+        self.api_url = "https://api.exchangerate-api.com/v4/latest/RON"  # URL-ul API-ului pentru RON
+        self.load_exchange_rates()
+
+    def setupUi(self):
+        self.setObjectName("Exchange")
+        self.resize(377, 342)
+        self.setWindowTitle("Exchange")
+
+        # Configurarea interfeței
+        self.sursaEditLine = QLineEdit(self)
+        self.sursaEditLine.setObjectName("sursaEditLine")
+        self.sursaEditLine.setGeometry(QRect(40, 60, 91, 31))
+
+        self.comboBox = QComboBox(self)
+        self.comboBox.setObjectName("comboBox")
+        self.comboBox.setGeometry(QRect(150, 60, 61, 30))
+
+        self.convertButton = QPushButton(self)
+        self.convertButton.setObjectName("convertButton")
+        self.convertButton.setGeometry(QRect(130, 120, 91, 30))
+        self.convertButton.setText("Convert")
+        self.convertButton.clicked.connect(self.convert_currency)
+
+        self.label = QLabel(self)
+        self.label.setObjectName("label")
+        self.label.setGeometry(QRect(80, 190, 61, 51))
+        self.label.setText("Rezultat:")
+
+        self.RezultatTextEdit = QTextEdit(self)
+        self.RezultatTextEdit.setObjectName("RezultatTextEdit")
+        self.RezultatTextEdit.setGeometry(QRect(160, 200, 150, 31))
+        self.RezultatTextEdit.setHtml("<p>...</p>")
+
+        self.label_2 = QLabel(self)
+        self.label_2.setObjectName("label_2")
+        self.label_2.setGeometry(QRect(210, 60, 31, 22))
+        self.label_2.setText("  -->")
+
+        self.comboBox_2 = QComboBox(self)
+        self.comboBox_2.setObjectName("comboBox_2")
+        self.comboBox_2.setGeometry(QRect(250, 60, 61, 30))
+
+        QMetaObject.connectSlotsByName(self)
+
+    def load_exchange_rates(self):
+        try:
+            response = requests.get(self.api_url)
+            data = response.json()
+            self.rates = data['rates']
+
+            # Populează QComboBox-uri
+            self.comboBox.addItems(self.rates.keys())
+            self.comboBox_2.addItems(self.rates.keys())
+        except Exception as e:
+            self.RezultatTextEdit.setText(f"Error loading rates: {e}")
+
+    def convert_currency(self):
+        try:
+            amount = float(self.sursaEditLine.text())
+            from_currency = self.comboBox.currentText()
+            to_currency = self.comboBox_2.currentText()
+
+            if from_currency in self.rates and to_currency in self.rates:
+                # Converti valoarea din moneda de plecare în RON
+                rate_from = self.rates[from_currency]
+                rate_to = self.rates[to_currency]
+                converted_amount = (amount / rate_from) * rate_to
+                self.RezultatTextEdit.setText(f"{converted_amount:.2f} {to_currency}")
+            else:
+                self.RezultatTextEdit.setText("Invalid currencies.")
+        except ValueError:
+            self.RezultatTextEdit.setText("Invalid amount.")
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = Ui_Exchange()
+    window.show()
+    sys.exit(app.exec())
+
+
