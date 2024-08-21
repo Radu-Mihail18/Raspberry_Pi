@@ -1,0 +1,107 @@
+import sys
+import mariadb
+import bcrypt
+from PySide6.QtWidgets import QApplication, QWidget, QLineEdit, QPushButton, QVBoxLayout, QLabel
+import os  # Adaugat pentru functionalitatea de lansare a aplicatiilor
+
+class LoginApp(QWidget):
+    def __init__(self):
+        super().__init__()
+
+        # Crearea interfetei
+        self.initUI()
+
+        # Conectare la baza de date MariaDB
+        try:
+            self.conn = mariadb.connect(
+                user="root",        # Utilizatorul pentru conectarea la MariaDB
+                password="database",    # Parola utilizatorului
+                host="127.0.0.1",       # Adresa serverului MariaDB
+                database="users"        # Numele bazei de date
+            )
+            self.c = self.conn.cursor()
+            self.create_table()
+        except mariadb.Error as e:
+            print(f"Error connecting to MariaDB: {e}")
+            sys.exit(1)
+
+    def initUI(self):
+        # Layout-ul interfetei
+        layout = QVBoxLayout()
+
+        # Username
+        self.username_line_edit = QLineEdit(self)
+        self.username_line_edit.setPlaceholderText("Username")
+        layout.addWidget(self.username_line_edit)
+
+        # Password
+        self.password_line_edit = QLineEdit(self)
+        self.password_line_edit.setPlaceholderText("Password")
+        self.password_line_edit.setEchoMode(QLineEdit.Password)
+        layout.addWidget(self.password_line_edit)
+
+        # Login button
+        self.login_button = QPushButton("Login", self)
+        self.login_button.clicked.connect(self.handle_login)
+        layout.addWidget(self.login_button)
+
+        # Status label
+        self.status_label = QLabel("", self)
+        layout.addWidget(self.status_label)
+
+        self.setLayout(layout)
+        self.setWindowTitle("Login Application")
+
+    def create_table(self):
+        self.c.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            username VARCHAR(255) NOT NULL,
+            password VARCHAR(255) NOT NULL
+        )
+        ''')
+        self.conn.commit()
+
+    def hash_password(self, password):
+        salt = bcrypt.gensalt()
+        return bcrypt.hashpw(password.encode('utf-8'), salt)
+
+    def check_password(self, stored_password, provided_password):
+        if isinstance(stored_password, str):
+            stored_password = stored_password.encode('utf-8')
+        return bcrypt.checkpw(provided_password.encode('utf-8'), stored_password)
+
+    def handle_login(self):
+        username = self.username_line_edit.text()
+        password = self.password_line_edit.text()
+
+        self.c.execute('SELECT password FROM users WHERE username=%s', (username,))
+        result = self.c.fetchone()
+
+        if result and self.check_password(result[0], password):
+            self.status_label.setText("Login successful!")
+            self.launch_application(username)
+        else:
+            self.status_label.setText("Username or password incorrect")
+
+    def launch_application(self, username):
+        if username == "Deadlyshadow18":
+            print("Launching admin application...")
+            os.system("python3 /home/cm4/app_calc.py")
+        elif username == "Raduku18":
+            print("Launching user application...")
+            os.system("python3 /home/cm4/Exchange_app/exchange.py")
+        elif username == "Admin":
+            print("Launching user application...")
+            os.system("python3 /home/cm4/To_do_list/to_do.py")
+        else:
+            print("No application associated with this user.")
+
+    def closeEvent(self, event):
+        self.conn.close()
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    login_app = LoginApp()
+    login_app.show()
+    sys.exit(app.exec())
