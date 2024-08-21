@@ -1,0 +1,29 @@
+import mariadb
+import bcrypt
+
+try:
+    conn = mariadb.connect(
+        user="root",
+        password="database",
+        host="127.0.0.1",
+        database="users"
+    )
+    cursor = conn.cursor()
+except mariadb.Error as e:
+    print(f"Error connecting to MariaDB: {e}")
+    sys.exit(1)
+
+cursor.execute("SELECT id, username, password FROM users")
+users = cursor.fetchall()
+
+for user in users:
+    user_id, username, plain_password = user
+
+    # Presupunând că plain_password este deja hash-uit, înlocuiește-l cu un nou hash
+    if not plain_password.startswith('$2b$'):
+        hashed_password = bcrypt.hashpw(plain_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        cursor.execute("UPDATE users SET password=%s WHERE id=%s", (hashed_password, user_id))
+        print(f"Updated password for user: {username}")
+
+conn.commit()
+conn.close()
