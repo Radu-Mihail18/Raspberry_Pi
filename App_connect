@@ -1,14 +1,13 @@
 import sys
 import mariadb
 import bcrypt
-from PySide6.QtWidgets import QApplication, QWidget, QLineEdit, QPushButton, QVBoxLayout, QLabel
-import os  # Adaugat pentru functionalitatea de lansare a aplicatiilor
+from PySide6.QtWidgets import QApplication, QWidget, QLineEdit, QPushButton, QVBoxLayout, QLabel, QDialog
 
 class LoginApp(QWidget):
     def __init__(self):
         super().__init__()
 
-        # Crearea interfetei
+        # Crearea interfeței
         self.initUI()
 
         # Conectare la baza de date MariaDB
@@ -16,7 +15,7 @@ class LoginApp(QWidget):
             self.conn = mariadb.connect(
                 user="root",        # Utilizatorul pentru conectarea la MariaDB
                 password="database",    # Parola utilizatorului
-                host="127.0.0.1",       # Adresa serverului MariaDB
+                host="127.0.0.1",       # Adresa serverului MariaDB (localhost dacă este pe același dispozitiv)
                 database="users"        # Numele bazei de date
             )
             self.c = self.conn.cursor()
@@ -26,7 +25,7 @@ class LoginApp(QWidget):
             sys.exit(1)
 
     def initUI(self):
-        # Layout-ul interfetei
+        # Layout-ul interfeței
         layout = QVBoxLayout()
 
         # Username
@@ -44,6 +43,11 @@ class LoginApp(QWidget):
         self.login_button = QPushButton("Login", self)
         self.login_button.clicked.connect(self.handle_login)
         layout.addWidget(self.login_button)
+
+        # Register button
+        self.register_button = QPushButton("Register", self)
+        self.register_button.clicked.connect(self.open_register_dialog)
+        layout.addWidget(self.register_button)
 
         # Status label
         self.status_label = QLabel("", self)
@@ -67,8 +71,6 @@ class LoginApp(QWidget):
         return bcrypt.hashpw(password.encode('utf-8'), salt)
 
     def check_password(self, stored_password, provided_password):
-        if isinstance(stored_password, str):
-            stored_password = stored_password.encode('utf-8')
         return bcrypt.checkpw(provided_password.encode('utf-8'), stored_password)
 
     def handle_login(self):
@@ -78,27 +80,93 @@ class LoginApp(QWidget):
         self.c.execute('SELECT password FROM users WHERE username=%s', (username,))
         result = self.c.fetchone()
 
-        if result and self.check_password(result[0], password):
+        if result and self.check_password(result[0].encode('utf-8'), password):
             self.status_label.setText("Login successful!")
             self.launch_application(username)
         else:
             self.status_label.setText("Username or password incorrect")
 
+    def open_register_dialog(self):
+        register_dialog = RegisterDialog(self)
+        register_dialog.exec_()
+
     def launch_application(self, username):
         if username == "Deadlyshadow18":
             print("Launching admin application...")
             os.system("python3 /home/cm4/app_calc.py")
-        elif username == "Raduku18":
+        elif username == "user":
             print("Launching user application...")
-            os.system("python3 /home/cm4/Exchange_app/exchange.py")
-        elif username == "Admin":
-            print("Launching user application...")
-            os.system("python3 /home/cm4/To_do_list/to_do.py")
+            # os.system("python3 /path/to/user_app.py")
         else:
             print("No application associated with this user.")
 
     def closeEvent(self, event):
         self.conn.close()
+
+
+class RegisterDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setWindowTitle("Register New User")
+
+        layout = QVBoxLayout()
+
+        # Username
+        self.username_line_edit = QLineEdit(self)
+        self.username_line_edit.setPlaceholderText("Username")
+        layout.addWidget(self.username_line_edit)
+
+        # Password
+        self.password_line_edit = QLineEdit(self)
+        self.password_line_edit.setPlaceholderText("Password")
+        self.password_line_edit.setEchoMode(QLineEdit.Password)
+        layout.addWidget(self.password_line_edit)
+
+        # Confirm Password
+        self.confirm_password_line_edit = QLineEdit(self)
+        self.confirm_password_line_edit.setPlaceholderText("Confirm Password")
+        self.confirm_password_line_edit.setEchoMode(QLineEdit.Password)
+        layout.addWidget(self.confirm_password_line_edit)
+
+        # Register button
+        self.register_button = QPushButton("Register", self)
+        self.register_button.clicked.connect(self.handle_register)
+        layout.addWidget(self.register_button)
+
+        # Status label
+        self.status_label = QLabel("", self)
+        layout.addWidget(self.status_label)
+
+        self.setLayout(layout)
+
+    def handle_register(self):
+        username = self.username_line_edit.text()
+        password = self.password_line_edit.text()
+        confirm_password = self.confirm_password_line_edit.text()
+
+        # Verificăm dacă username-ul este deja în uz
+        self.parent().c.execute('SELECT username FROM users WHERE username=%s', (username,))
+        if self.parent().c.fetchone():
+            self.status_label.setText("Username already taken.")
+            return
+
+        # Verificăm dacă parolele introduse se potrivesc
+        if password != confirm_password:
+            self.status_label.setText("Passwords do not match.")
+            return
+
+        # Hash-uirea parolei și adăugarea utilizatorului în baza de date
+        hashed_password = self.parent().hash_password(password)
+        try:
+            self.parent().c.execute('INSERT INTO users (username, password) VALUES (%s, %s)', 
+                                    (username, hashed_password.decode('utf-8')))
+            self.parent().conn.commit()
+            self.status_label.setText("User registered successfully.")
+        except mariadb.Error as e:
+            self.status_label.setText(f"Error: {e}")
+
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
