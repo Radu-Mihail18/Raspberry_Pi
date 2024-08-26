@@ -1,0 +1,186 @@
+import sys
+import mariadb
+import bcrypt
+import random
+import string
+import os
+from PySide6.QtWidgets import QApplication, QWidget, QLineEdit, QPushButton, QVBoxLayout, QLabel, QDialog
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
+class LoginApp(QWidget):
+    def __init__(self):
+        super().__init__()
+
+        # Crearea interfeței
+        self.initUI()
+
+        # Conectare la baza de date MariaDB
+        try:
+            self.conn = mariadb.connect(
+                user="root",
+                password="database",
+                host="127.0.0.1",
+                database="users"
+            )
+            self.c = self.conn.cursor()
+            self.create_table()
+        except mariadb.Error as e:
+            print(f"Error connecting to MariaDB: {e}")
+            sys.exit(1)
+
+    def initUI(self):
+        layout = QVBoxLayout()
+
+        self.username_line_edit = QLineEdit(self)
+        self.username_line_edit.setPlaceholderText("Username")
+        layout.addWidget(self.username_line_edit)
+
+        self.password_line_edit = QLineEdit(self)
+        self.password_line_edit.setPlaceholderText("Password")
+        self.password_line_edit.setEchoMode(QLineEdit.Password)
+        layout.addWidget(self.password_line_edit)
+
+        self.login_button = QPushButton("Login", self)
+        self.login_button.clicked.connect(self.handle_login)
+        layout.addWidget(self.login_button)
+
+        self.register_button = QPushButton("Register", self)
+        self.register_button.clicked.connect(self.open_register_dialog)
+        layout.addWidget(self.register_button)
+
+        self.status_label = QLabel("", self)
+        layout.addWidget(self.status_label)
+
+        self.setLayout(layout)
+        self.setWindowTitle("Login Application")
+
+    def create_table(self):
+        self.c.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            username VARCHAR(255) NOT NULL,
+            password VARCHAR(255) NOT NULL,
+            email VARCHAR(255) NOT NULL
+        )
+        ''')
+        self.conn.commit()
+
+    def hash_password(self, password):
+        salt = bcrypt.gensalt()
+        return bcrypt.hashpw(password.encode('utf-8'), salt)
+
+    def check_password(self, stored_password, provided_password):
+        return bcrypt.checkpw(provided_password.encode('utf-8'), stored_password)
+
+    def handle_login(self):
+        username = self.username_line_edit.text()
+        password = self.password_line_edit.text()
+
+        self.c.execute('SELECT password FROM users WHERE username=?', (username,))
+        result = self.c.fetchone()
+
+        if result and self.check_password(result[0].encode('utf-8'), password):
+            self.status_label.setText("Login successful!")
+            self.launch_application(username)
+        else:
+            self.status_label.setText("Username or password incorrect")
+
+    def open_register_dialog(self):
+        register_dialog = RegisterDialog(self)
+        register_dialog.exec_()
+
+    def launch_application(self, username):
+        if username == "Deadlyshadow18":
+            print("Launching admin application...")
+            os.system("python3 /home/cm4/app_calc.py")
+        elif username == "user":
+            print("Launching user application...")
+            # os.system("python3 /path/to/user_app.py")
+        else:
+            print("No application associated with this user.")
+
+    def closeEvent(self, event):
+        self.conn.close()
+
+
+class RegisterDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setWindowTitle("Register New User")
+
+        layout = QVBoxLayout()
+
+        self.email_line_edit = QLineEdit(self)
+        self.email_line_edit.setPlaceholderText("Email")
+        layout.addWidget(self.email_line_edit)
+
+        self.register_button = QPushButton("Send", self)
+        self.register_button.clicked.connect(self.handle_register)
+        layout.addWidget(self.register_button)
+
+        self.status_label = QLabel("", self)
+        layout.addWidget(self.status_label)
+
+        self.setLayout(layout)
+
+    def generate_random_string(self, length=8):
+        return ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(length))
+
+    def send_email(self, recipient_email, username, password):
+        sender_email = "radu.bucur18@gmail.com"  # Change with your email
+        sender_password = "Deadlyshadow18"  # Change with your password
+        smtp_server = "smtp.gmail.com"
+        smtp_port = 587
+
+        subject = "Your new account credentials"
+        body = f"Your account has been created.\n\nUsername: {username}\nPassword: {password}"
+
+        # Crearea mesajului
+        msg = MIMEMultipart()
+        msg['From'] = sender_email
+        msg['To'] = recipient_email
+        msg['Subject'] = subject
+        msg.attach(MIMEText(body, 'plain'))
+
+        try:
+            # Trimiterea emailului
+            with smtplib.SMTP(smtp_server, smtp_port) as server:
+                server.starttls()
+                server.login(sender_email, sender_password)
+                server.sendmail(sender_email, recipient_email, msg.as_string())
+            print("Email sent successfully.")
+        except Exception as e:
+            print(f"Error sending email: {e}")
+
+    def handle_register(self):
+        email = self.email_line_edit.text()
+
+        # Generarea unui username și a unei parole random
+        username = self.generate_random_string(8)
+        password = self.generate_random_string(12)
+
+        # Hash-uirea parolei
+        hashed_password = self.parent().hash_password(password)
+
+        # Stocarea în baza de date
+        try:
+            self.parent().c.execute('INSERT INTO users (username, password, email) VALUES (?, ?, ?)', 
+                                    (username, hashed_password.decode('utf-8'), email))
+            self.parent().conn.commit()
+
+            # Trimiterea emailului cu username și parola generate
+            self.send_email(email, username, password)
+
+            self.status_label.setText("User registered successfully. Check your email for credentials.")
+        except mariadb.Error as e:
+            self.status_label.setText(f"Error: {e}")
+
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    login_app = LoginApp()
+    login_app.show()
+    sys.exit(app.exec())
